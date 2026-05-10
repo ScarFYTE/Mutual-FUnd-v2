@@ -25,15 +25,19 @@ int main() {
     fileManager.loadData(user, portfolio);
 
     sf::Text title(font, "Mutual Fund Investment Tracker", 24);
+    title.setFillColor(sf::Color::Black);
     title.setPosition({20.f, 20.f});
 
     sf::Text info(font, "", 16);
+    info.setFillColor(sf::Color::Black);
     info.setPosition({20.f, 70.f});
 
     sf::Text fundsText(font, "", 16);
+    fundsText.setFillColor(sf::Color::Black);
     fundsText.setPosition({20.f, 130.f});
 
     sf::Text portfolioText(font, "", 16);
+    portfolioText.setFillColor(sf::Color::Black);
     portfolioText.setPosition({20.f, 340.f});
 
     sf::RectangleShape buyBtn(sf::Vector2f(120.f, 35.f));
@@ -45,9 +49,11 @@ int main() {
     sellBtn.setPosition({700.f, 200.f});
 
     sf::Text buyText(font, "Buy 10 Units", 14);
+    buyText.setFillColor(sf::Color::Black);
     buyText.setPosition({710.f, 157.f});
 
     sf::Text sellText(font, "Sell 10 Units", 14);
+    sellText.setFillColor(sf::Color::Black);
     sellText.setPosition({710.f, 207.f});
 
     while (window.isOpen()) {
