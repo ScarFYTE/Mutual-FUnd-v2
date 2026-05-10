@@ -6,6 +6,31 @@
 #include "AnalyticsManager.h"
 #include <iostream>
 #include <sstream>
+#include <deque>
+#include <map>
+#include <algorithm>
+
+namespace {
+struct Candle {
+    float open;
+    float high;
+    float low;
+    float close;
+};
+
+struct CandleSeries {
+    std::vector<float> samples;
+    std::deque<Candle> candles;
+    sf::Clock timer;
+};
+
+float mapPriceToY(float price, float minPrice, float maxPrice, float top, float height) {
+    if (maxPrice - minPrice < 0.01f) {
+        return top + height / 2.0f;
+    }
+    return top + (maxPrice - price) / (maxPrice - minPrice) * height;
+}
+} // namespace
 
 int main() {
     sf::RenderWindow window(sf::VideoMode({900u, 600u}), "Mutual Fund Investment Tracker");
@@ -23,6 +48,7 @@ int main() {
     FileManager fileManager;
     AnalyticsManager analytics;
     size_t selectedFundIndex = 0;
+    std::map<std::string, CandleSeries> candleSeries;
 
     fileManager.loadData(user, portfolio);
 
@@ -41,6 +67,14 @@ int main() {
     sf::Text portfolioText(font, "", 16);
     portfolioText.setFillColor(sf::Color::Black);
     portfolioText.setPosition({20.f, 340.f});
+
+    sf::Text chartTitle(font, "Selected Fund Candles (5s)", 14);
+    chartTitle.setFillColor(sf::Color::Black);
+    chartTitle.setPosition({520.f, 330.f});
+
+    sf::Text chartHint(font, "Collecting data...", 12);
+    chartHint.setFillColor(sf::Color::Black);
+    chartHint.setPosition({520.f, 540.f});
 
     sf::RectangleShape buyBtn(sf::Vector2f(120.f, 35.f));
     buyBtn.setFillColor(sf::Color(100, 200, 120));
@@ -73,6 +107,15 @@ int main() {
     sf::Text nextText(font, "Next Fund", 14);
     nextText.setFillColor(sf::Color::Black);
     nextText.setPosition({710.f, 305.f});
+
+    sf::RectangleShape chartArea(sf::Vector2f(340.f, 190.f));
+    chartArea.setFillColor(sf::Color(250, 250, 250));
+    chartArea.setOutlineColor(sf::Color(200, 200, 200));
+    chartArea.setOutlineThickness(1.f);
+    chartArea.setPosition({520.f, 350.f});
+
+    constexpr float candleIntervalSeconds = 5.0f;
+    constexpr size_t maxCandles = 20;
 
     while (window.isOpen()) {
         while (const auto event = window.pollEvent()) {
@@ -123,6 +166,26 @@ int main() {
         }
         fundsText.setString(fundsStream.str());
 
+        if (!funds.empty()) {
+            const auto &selectedFund = funds[selectedFundIndex];
+            auto &series = candleSeries[selectedFund.getName()];
+            series.samples.push_back(static_cast<float>(selectedFund.getNAV()));
+
+            if (series.timer.getElapsedTime().asSeconds() >= candleIntervalSeconds && !series.samples.empty()) {
+                Candle candle{};
+                candle.open = series.samples.front();
+                candle.close = series.samples.back();
+                candle.high = *std::max_element(series.samples.begin(), series.samples.end());
+                candle.low = *std::min_element(series.samples.begin(), series.samples.end());
+                series.candles.push_back(candle);
+                if (series.candles.size() > maxCandles) {
+                    series.candles.pop_front();
+                }
+                series.samples.clear();
+                series.timer.restart();
+            }
+        }
+
         portfolioText.setString("Portfolio:\n" + portfolio.getHoldingsDisplay() +
                                 "\n\nAnalytics:\n" + analytics.generateReport(portfolio, funds));
 
@@ -139,6 +202,60 @@ int main() {
         window.draw(sellText);
         window.draw(prevText);
         window.draw(nextText);
+        window.draw(chartTitle);
+        window.draw(chartArea);
+
+        if (!funds.empty()) {
+            const auto &selectedFund = funds[selectedFundIndex];
+            auto &series = candleSeries[selectedFund.getName()];
+            if (series.candles.empty()) {
+                window.draw(chartHint);
+            } else {
+                float minPrice = series.candles.front().low;
+                float maxPrice = series.candles.front().high;
+                for (const auto &candle : series.candles) {
+                    minPrice = std::min(minPrice, candle.low);
+                    maxPrice = std::max(maxPrice, candle.high);
+                }
+
+                float padding = (maxPrice - minPrice) * 0.05f;
+                minPrice -= padding;
+                maxPrice += padding;
+
+                const float chartX = chartArea.getPosition().x;
+                const float chartY = chartArea.getPosition().y;
+                const float chartW = chartArea.getSize().x;
+                const float chartH = chartArea.getSize().y;
+
+                float candleWidth = chartW / static_cast<float>(maxCandles);
+                float bodyWidth = candleWidth * 0.6f;
+                float x = chartX + candleWidth * 0.2f;
+
+                for (const auto &candle : series.candles) {
+                    float highY = mapPriceToY(candle.high, minPrice, maxPrice, chartY, chartH);
+                    float lowY = mapPriceToY(candle.low, minPrice, maxPrice, chartY, chartH);
+                    float openY = mapPriceToY(candle.open, minPrice, maxPrice, chartY, chartH);
+                    float closeY = mapPriceToY(candle.close, minPrice, maxPrice, chartY, chartH);
+
+                    sf::Vertex line[] = {
+                        sf::Vertex({x + bodyWidth / 2.0f, highY}, sf::Color::Black),
+                        sf::Vertex({x + bodyWidth / 2.0f, lowY}, sf::Color::Black)
+                    };
+                    window.draw(line, 2, sf::PrimitiveType::Lines);
+
+                    float bodyTop = std::min(openY, closeY);
+                    float bodyHeight = std::max(2.0f, std::abs(openY - closeY));
+                    sf::RectangleShape body({bodyWidth, bodyHeight});
+                    body.setPosition({x, bodyTop});
+                    body.setFillColor(candle.close >= candle.open ? sf::Color(80, 170, 120)
+                                                                  : sf::Color(200, 90, 90));
+                    window.draw(body);
+
+                    x += candleWidth;
+                }
+            }
+        }
+
         window.display();
     }
 
