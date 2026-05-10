@@ -22,6 +22,7 @@ struct CandleSeries {
     std::vector<float> samples;
     std::deque<Candle> candles;
     sf::Clock timer;
+    sf::Clock sampleTimer;
 };
 
 float mapPriceToY(float price, float minPrice, float maxPrice, float top, float height) {
@@ -115,6 +116,7 @@ int main() {
     chartArea.setPosition({520.f, 350.f});
 
     constexpr float candleIntervalSeconds = 5.0f;
+    constexpr float sampleIntervalSeconds = 1.0f;
     constexpr size_t maxCandles = 20;
 
     while (window.isOpen()) {
@@ -169,7 +171,11 @@ int main() {
         if (!funds.empty()) {
             const auto &selectedFund = funds[selectedFundIndex];
             auto &series = candleSeries[selectedFund.getName()];
-            series.samples.push_back(static_cast<float>(selectedFund.getNAV()));
+
+            if (series.sampleTimer.getElapsedTime().asSeconds() >= sampleIntervalSeconds) {
+                series.samples.push_back(static_cast<float>(selectedFund.getNAV()));
+                series.sampleTimer.restart();
+            }
 
             if (series.timer.getElapsedTime().asSeconds() >= candleIntervalSeconds && !series.samples.empty()) {
                 Candle candle{};
@@ -237,10 +243,11 @@ int main() {
                     float openY = mapPriceToY(candle.open, minPrice, maxPrice, chartY, chartH);
                     float closeY = mapPriceToY(candle.close, minPrice, maxPrice, chartY, chartH);
 
-                    sf::Vertex line[] = {
-                        sf::Vertex({x + bodyWidth / 2.0f, highY}, sf::Color::Black),
-                        sf::Vertex({x + bodyWidth / 2.0f, lowY}, sf::Color::Black)
-                    };
+                    sf::Vertex line[2];
+                    line[0].position = sf::Vector2f(x + bodyWidth / 2.0f, highY);
+                    line[0].color = sf::Color::Black;
+                    line[1].position = sf::Vector2f(x + bodyWidth / 2.0f, lowY);
+                    line[1].color = sf::Color::Black;
                     window.draw(line, 2, sf::PrimitiveType::Lines);
 
                     float bodyTop = std::min(openY, closeY);
