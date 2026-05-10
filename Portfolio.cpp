@@ -1,7 +1,7 @@
 #include "Portfolio.h"
 #include <sstream>
 
-void Portfolio::buyUnits(User &user, MutualFund &fund, int units) {
+void Portfolio::buyUnits(User &user, const MutualFund &fund, int units) {
     double cost = fund.getNAV() * units;
     if (user.withdraw(cost)) {
         holdings[fund.getName()] += units;
@@ -9,7 +9,7 @@ void Portfolio::buyUnits(User &user, MutualFund &fund, int units) {
     }
 }
 
-void Portfolio::sellUnits(User &user, MutualFund &fund, int units) {
+void Portfolio::sellUnits(User &user, const MutualFund &fund, int units) {
     if (holdings[fund.getName()] >= units) {
         holdings[fund.getName()] -= units;
         double gain = fund.getNAV() * units;

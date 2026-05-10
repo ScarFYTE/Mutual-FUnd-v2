@@ -24,25 +24,16 @@ int main() {
 
     fileManager.loadData(user, portfolio);
 
-    sf::Text title;
-    title.setFont(font);
-    title.setString("Mutual Fund Investment Tracker");
-    title.setCharacterSize(24);
+    sf::Text title(font, "Mutual Fund Investment Tracker", 24);
     title.setPosition({20.f, 20.f});
 
-    sf::Text info;
-    info.setFont(font);
-    info.setCharacterSize(16);
+    sf::Text info(font, "", 16);
     info.setPosition({20.f, 70.f});
 
-    sf::Text fundsText;
-    fundsText.setFont(font);
-    fundsText.setCharacterSize(16);
+    sf::Text fundsText(font, "", 16);
     fundsText.setPosition({20.f, 130.f});
 
-    sf::Text portfolioText;
-    portfolioText.setFont(font);
-    portfolioText.setCharacterSize(16);
+    sf::Text portfolioText(font, "", 16);
     portfolioText.setPosition({20.f, 340.f});
 
     sf::RectangleShape buyBtn(sf::Vector2f(120.f, 35.f));
@@ -53,29 +44,22 @@ int main() {
     sellBtn.setFillColor(sf::Color(200, 100, 100));
     sellBtn.setPosition({700.f, 200.f});
 
-    sf::Text buyText;
-    buyText.setFont(font);
-    buyText.setString("Buy 10 Units");
-    buyText.setCharacterSize(14);
+    sf::Text buyText(font, "Buy 10 Units", 14);
     buyText.setPosition({710.f, 157.f});
 
-    sf::Text sellText;
-    sellText.setFont(font);
-    sellText.setString("Sell 10 Units");
-    sellText.setCharacterSize(14);
+    sf::Text sellText(font, "Sell 10 Units", 14);
     sellText.setPosition({710.f, 207.f});
 
     while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
+        while (const auto event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
                 fileManager.saveData(user, portfolio);
                 window.close();
             }
 
-            if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2f mouse(static_cast<float>(event.mouseButton.x),
-                                  static_cast<float>(event.mouseButton.y));
+            if (const auto *mouseEvent = event->getIf<sf::Event::MouseButtonPressed>()) {
+                sf::Vector2f mouse(static_cast<float>(mouseEvent->position.x),
+                                  static_cast<float>(mouseEvent->position.y));
 
                 if (buyBtn.getGlobalBounds().contains(mouse)) {
                     portfolio.buyUnits(user, market.getFunds()[0], 10);

@@ -11,8 +11,8 @@ private:
     std::vector<Transaction> history;
 
 public:
-    void buyUnits(User &user, MutualFund &fund, int units);
-    void sellUnits(User &user, MutualFund &fund, int units);
+    void buyUnits(User &user, const MutualFund &fund, int units);
+    void sellUnits(User &user, const MutualFund &fund, int units);
     std::string getHoldingsDisplay() const;
     double totalInvestment(const std::vector<MutualFund>& funds) const;
     double currentValue(const std::vector<MutualFund>& funds) const;
