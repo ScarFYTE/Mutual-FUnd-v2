@@ -17,4 +17,7 @@ public:
     double totalInvestment(const std::vector<MutualFund>& funds) const;
     double currentValue(const std::vector<MutualFund>& funds) const;
     const std::vector<Transaction>& getHistory() const;
+    int getUnitsForFund(const std::string &fundName) const;
+    double getNetInvestedForFund(const std::string &fundName) const;
+    const std::map<std::string, int>& getHoldings() const;
 };

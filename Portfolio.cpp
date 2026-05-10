@@ -43,3 +43,28 @@ double Portfolio::currentValue(const std::vector<MutualFund>& funds) const {
 const std::vector<Transaction>& Portfolio::getHistory() const {
     return history;
 }
+
+int Portfolio::getUnitsForFund(const std::string &fundName) const {
+    auto it = holdings.find(fundName);
+    return it != holdings.end() ? it->second : 0;
+}
+
+double Portfolio::getNetInvestedForFund(const std::string &fundName) const {
+    double invested = 0.0;
+    for (const auto &txn : history) {
+        if (txn.getFundName() != fundName) {
+            continue;
+        }
+        double amount = txn.getPrice() * txn.getUnits();
+        if (txn.getType() == "BUY") {
+            invested += amount;
+        } else {
+            invested -= amount;
+        }
+    }
+    return invested;
+}
+
+const std::map<std::string, int>& Portfolio::getHoldings() const {
+    return holdings;
+}
